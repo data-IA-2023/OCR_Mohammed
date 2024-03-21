@@ -4,7 +4,7 @@ import requests
 def recup_name_image():
 
     # URL de l'API
-    url = "https://invoiceocrp3.azurewebsites.net/invoices"
+    url = "https://invoiceocrp3.azurewebsites.net/invoices?start_date=2024-01-05"
 
     # Headers de la requête, spécifiant que nous acceptons une réponse en JSON
     headers = {
