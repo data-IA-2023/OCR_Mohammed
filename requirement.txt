@@ -1,0 +1,11 @@
+pandas
+fastapi
+SQLAlchemy==2.0.27
+fastapi-sqlalchemy
+Jinja2
+pytest
+python-dotenv
+python-multipart
+uvicorn
+scikit-learn
+psycopg2

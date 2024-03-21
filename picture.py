@@ -44,8 +44,6 @@ def test_recup():
         print(recup(name))
 
 
-test = test_recup()
-print(test)
 
 
 def load_facture(url, name_facture):
@@ -60,3 +58,8 @@ def load_facture(url, name_facture):
         print(
             f"Échec du téléchargement de l'image. Code d'état HTTP : {response.status_code}"
         )
+
+
+if __name__ == '__main__':
+    test = test_recup()
+    print(test)
