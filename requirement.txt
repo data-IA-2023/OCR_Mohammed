@@ -10,3 +10,5 @@ uvicorn
 scikit-learn
 psycopg2
 azure-ai-vision-imageanalysis
+azure.cognitiveservices.vision.computervision
+pillow
