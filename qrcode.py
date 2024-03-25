@@ -16,7 +16,7 @@ def read_qr_code(image_path):
                 # Organiser les données en un dictionnaire
                 data_dict = {}
                 for line in data.split('\n'):
-                    parts = line.split(':')
+                    parts = line.split(':', 1)  # Séparer la ligne en deux parties au premier ':' en partant de la fin
                     if len(parts) == 2:
                         key, value = parts
                         data_dict[key.strip()] = value.strip()
@@ -29,6 +29,7 @@ def read_qr_code(image_path):
     except Exception as e:
         print(f"Une erreur s'est produite lors de la lecture du QR code : {e}")
         return None
+
 
 if __name__ == '__main__':
     qr_code_data = read_qr_code(r'.\factures\FAC_2024_0266-1739322.jpeg')
