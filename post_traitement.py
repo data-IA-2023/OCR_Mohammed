@@ -46,40 +46,45 @@ position = {
 }
 
 def decodeFactures(json_data):
+    invoice_data = {}
+
     for item in json_data:
         if 'bounding_box' in item:
             if inTheZone(position['id'], item["bounding_box"]):
-                id = item["text"]
-                print(f'id is {id}')
+                invoice_data['id'] = item["text"].replace("INVOICE ", "")
             elif inTheZone(position['date'], item["bounding_box"]):
-                date = item["text"]
-                print(f'date is {date}')
+                invoice_data['date'] = item["text"].replace("Issue date ", "")
             elif inTheZone(position['client'], item["bounding_box"]):
-                date = item["text"]
-                print(f'client is {date}')
+                invoice_data['client'] = item["text"].replace("Bill to ", "")
             elif inTheZone(position['adresse1'], item["bounding_box"]):
-                adresse1 = item["text"]
-                print(f'adresse1 is {adresse1}')
+                invoice_data['adresse1'] = item["text"]
             elif inTheZone(position['adresse2'], item["bounding_box"]):
-                adresse2 = item["text"]
-                print(f'adresse2 is {adresse2}')
+                invoice_data['adresse2'] = item["text"]
             elif inTheSegment(position['labels'], item["bounding_box"]):
-                labels = item["text"]
-                print(f'labels is {labels}')
+                if 'labels' not in invoice_data:
+                    invoice_data['labels'] = []
+                invoice_data['labels'].append(item["text"])
             elif inTheSegment(position['quantites'], item["bounding_box"]):
-                quantites = item["text"]
-                print(f'quantites is {quantites}')
+                if 'quantites' not in invoice_data:
+                    invoice_data['quantites'] = []
+                invoice_data['quantites'].append(item["text"])
             elif inTheSegment(position['prix'], item["bounding_box"]):
-                prix = item["text"]
-                print(f'prix is {prix}')
+                if 'prix' not in invoice_data:
+                    invoice_data['prix'] = []
+                invoice_data['prix'].append(item["text"])
             else:
-                inconnu = item["text"]
-                print(f'inconnu is {inconnu}')
+                if 'inconnu' not in invoice_data:
+                    invoice_data['inconnu'] = []
+                invoice_data['inconnu'].append(item["text"])
         else:
-            
-            print("No bounding box found in item")
+            invoice_data['QRid'] = item["INVOICE"]
+            invoice_data['QRdate'] = item["DATE"]
+            invoice_data['QRclientId'] = item["CUST"]
+            invoice_data['QRclientCAT'] = item["CAT"]
 
+    return invoice_data    
 
 # Load JSON data from file
 json_data = load_json_file("json\FAC_2019_0001-112650.json")
-decodeFactures(json_data)
+invoice = json.dumps(decodeFactures(json_data), indent=4)
+print(invoice)
