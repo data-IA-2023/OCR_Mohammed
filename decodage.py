@@ -24,7 +24,6 @@ def inTheSegment(segment, box):
     x_max = max(box[::2])
     y_max = max(box[1::2])
 
-    # Vérifier si le segment traverse l'un des côtés de la boîte
     if (x1 <= x_max and x2 >= x_min and
         y1 <= y_max and y2 >= y_min):
         return True
@@ -64,7 +63,19 @@ def decodeFactures(json_data):
             elif inTheSegment(position['quantites'], item["bounding_box"]):
                 if 'quantites' not in invoice_data:
                     invoice_data['quantites'] = []
-                invoice_data['quantites'].append(item["text"].replace(" x", "").replace(" ", ""))
+                
+                quantite = item["text"].lower()
+                #pour les cas ou il recupere les deux 
+                if "euro" in quantite :
+                    
+                    invoice_data['quantites'].append(quantite.split("x")[0].strip())
+                    if 'prix' not in invoice_data:
+                        invoice_data['prix'] = []
+                    prix=quantite.split("x")[-1].replace(" euro", "").replace(" ", "")
+                    invoice_data['prix'].append(prix)
+                    
+                else:    
+                    invoice_data['quantites'].append(item["text"].replace(" x", "").replace(" ", ""))
             elif inTheSegment(position['prix'], item["bounding_box"]):
                 if 'prix' not in invoice_data:
                     invoice_data['prix'] = []
@@ -85,16 +96,16 @@ def decodeFactures(json_data):
     invoice_data['TotalValue'] = invoice_data['prix'][-1]
     invoice_data['prix'].pop()
         
-        # Calcul du total
-    if 'quantites' in invoice_data and 'prix' in invoice_data:
-        total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
-        invoice_data['total_Calculated'] = total
+    # Calcul du total
+    # if 'quantites' in invoice_data and 'prix' in invoice_data:
+    #     total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
+    #     invoice_data['total_Calculated'] = total
         
     return invoice_data    
 
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2019_0001-112650.json")
+    json_data = load_json_file("json\FAC_2019_0007-2747871.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     print(invoice)
