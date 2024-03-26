@@ -1,15 +1,12 @@
-
-
 import json
 
-# Assuming the file contains JSON data representing bounding boxes
-# Load the JSON data
+
 def load_json_file(filename):
     with open(filename, 'r') as file:
         return json.load(file)
 
 
-def inTheZone(point, box):
+def inThePoint(point, box):
 
     x, y = point
     x_coordinates = box[::2]  
@@ -50,15 +47,15 @@ def decodeFactures(json_data):
 
     for item in json_data:
         if 'bounding_box' in item:
-            if inTheZone(position['id'], item["bounding_box"]):
+            if inThePoint(position['id'], item["bounding_box"]):
                 invoice_data['id'] = item["text"].replace("INVOICE ", "")
-            elif inTheZone(position['date'], item["bounding_box"]):
-                invoice_data['date'] = item["text"].replace("Issue date ", "")
-            elif inTheZone(position['client'], item["bounding_box"]):
-                invoice_data['client'] = item["text"].replace("Bill to ", "")
-            elif inTheZone(position['adresse1'], item["bounding_box"]):
+            elif inThePoint(position['date'], item["bounding_box"]):
+                invoice_data['date'] = item["text"]
+            elif inThePoint(position['client'], item["bounding_box"]):
+                invoice_data['client'] = item["text"]
+            elif inThePoint(position['adresse1'], item["bounding_box"]):
                 invoice_data['adresse1'] = item["text"]
-            elif inTheZone(position['adresse2'], item["bounding_box"]):
+            elif inThePoint(position['adresse2'], item["bounding_box"]):
                 invoice_data['adresse2'] = item["text"]
             elif inTheSegment(position['labels'], item["bounding_box"]):
                 if 'labels' not in invoice_data:
@@ -67,11 +64,11 @@ def decodeFactures(json_data):
             elif inTheSegment(position['quantites'], item["bounding_box"]):
                 if 'quantites' not in invoice_data:
                     invoice_data['quantites'] = []
-                invoice_data['quantites'].append(item["text"])
+                invoice_data['quantites'].append(item["text"].replace(" x", "").replace(" ", ""))
             elif inTheSegment(position['prix'], item["bounding_box"]):
                 if 'prix' not in invoice_data:
                     invoice_data['prix'] = []
-                invoice_data['prix'].append(item["text"])
+                invoice_data['prix'].append(item["text"].replace(" Euro", "").replace(" ", ""))
             else:
                 if 'inconnu' not in invoice_data:
                     invoice_data['inconnu'] = []
@@ -82,9 +79,22 @@ def decodeFactures(json_data):
             invoice_data['QRclientId'] = item["CUST"]
             invoice_data['QRclientCAT'] = item["CAT"]
 
+    # traite la derniere ligne total
+    invoice_data['Total_label'] = invoice_data['labels'][-1]
+    invoice_data['labels'].pop() 
+    invoice_data['TotalValue'] = invoice_data['prix'][-1]
+    invoice_data['prix'].pop()
+        
+        # Calcul du total
+    if 'quantites' in invoice_data and 'prix' in invoice_data:
+        total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
+        invoice_data['total_Calculated'] = total
+        
     return invoice_data    
 
-# Load JSON data from file
-json_data = load_json_file("json\FAC_2019_0001-112650.json")
-invoice = json.dumps(decodeFactures(json_data), indent=4)
-print(invoice)
+
+if __name__ == "__main__":
+    # Load JSON data from file
+    json_data = load_json_file("json\FAC_2019_0001-112650.json")
+    invoice = json.dumps(decodeFactures(json_data), indent=4)
+    print(invoice)
