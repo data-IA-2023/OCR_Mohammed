@@ -144,7 +144,7 @@ def decodeFactures(json_data):
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2019_1030-1078220.json")
+    json_data = load_json_file("json\FAC_2019_0040-4152451.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     
     
