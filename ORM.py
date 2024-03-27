@@ -76,16 +76,39 @@ class DetailFacture(Base):
 # Chargement des données JSON
 def add_invoice(invoice, session):
     data = invoice
-    # Création de l'objet Client
-    client = Client(
-        QRclientId=data['QRclientId'],
-        QRclientCAT=data['QRclientCAT'],
-        client=data['client'],
-        adresse=data['adresse1'] + ', ' + data['adresse2']
-    )
+    
+    
 
-    # Ajout du client à la session
-    session.add(client)
+    
+    # Vérification si la facture existe déjà dans la base de données
+    existing_invoice = session.query(Facture).filter_by(QRid=data['QRid']).first()
+    
+    if existing_invoice:
+        print(f"La facture avec QRid '{data['QRid']}' existe déjà dans la base de données.")
+        # Vous pouvez choisir de gérer cette situation comme vous le souhaitez, par exemple, mettre à jour les données de la facture existante ou ignorer l'ajout
+        return
+    
+    
+    
+    # Vérification si le client existe déjà dans la base de données
+    existing_client = session.query(Client).filter_by(QRclientId=data['QRclientId']).first()
+    
+    if existing_client:
+        print(f"Le client avec QRclientId '{data['QRclientId']}' existe déjà dans la base de données.")
+        # Vous pouvez choisir de gérer cette situation comme vous le souhaitez, par exemple, mettre à jour les données du client existant ou ignorer l'ajout
+        
+    else:
+    
+        # Création de l'objet Client
+        client = Client(
+            QRclientId=data['QRclientId'],
+            QRclientCAT=data['QRclientCAT'],
+            client=data['client'],
+            adresse=data['adresse1'] + ', ' + data['adresse2']    
+        )
+        # Ajout du client à la session
+        session.add(client)
+
 
     # Création de l'objet Facture
     facture = Facture(

@@ -82,7 +82,7 @@ def decodeFactures(json_data):
             elif inTheSegment(position['prix'], item["bounding_box"]):
                 if 'prix' not in invoice_data:
                     invoice_data['prix'] = []
-                invoice_data['prix'].append(item["text"].replace(" Euro", "").replace(" ", ""))
+                invoice_data['prix'].append(item["text"].replace(" Euro", "").replace(" ", "").replace(':', ''))
             else:
                 if 'inconnu' not in invoice_data:
                     invoice_data['inconnu'] = []
