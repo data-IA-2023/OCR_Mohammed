@@ -1,4 +1,5 @@
 import json
+import re
 
 from ORM import add_invoice, connectBd, createsession
 from surveillance import surveillanceAllInOne
@@ -44,9 +45,37 @@ position = {
     'prix':[652, 193,652, 1037],
 }
 
+def isfloat(s):
+    try:
+        float(s.replace(",", "."))
+        return True
+    except ValueError:
+        return False
+
+def parse_line(line):
+
+    # Motif regex pour capturer les différentes parties
+    pattern = r"^(.+?)\.\s*(\d+)\s*x\s*([\d.]+)\s*Euro$"
+
+    # Recherche des correspondances dans la chaîne
+    matches = re.match(pattern, line)
+
+    # Si une correspondance est trouvée
+    if matches:
+        description = matches.group(1)
+        quantite = matches.group(2)
+        prix_unitaire = matches.group(3)
+        
+        return description, quantite, prix_unitaire
+    else:
+        return None
+
 def decodeFactures(json_data):
     invoice_data = {}
-
+    invoice_data['labels'] = []
+    invoice_data['quantites'] =[]
+    invoice_data['prix'] =[]
+    invoice_data['inconnu'] =[]
     for item in json_data:
         if 'bounding_box' in item:
             if inThePoint(position['id'], item["bounding_box"]):
@@ -60,32 +89,37 @@ def decodeFactures(json_data):
             elif inThePoint(position['adresse2'], item["bounding_box"]):
                 invoice_data['adresse2'] = item["text"]
             elif inTheSegment(position['labels'], item["bounding_box"]):
-                if 'labels' not in invoice_data:
-                    invoice_data['labels'] = []
-                invoice_data['labels'].append(item["text"])
+                label = item["text"]
+                resultat= parse_line(label)
+                if resultat :
+                    l, q, p= resultat
+                    invoice_data['labels'].append(l)
+                    invoice_data['quantites'].append(q)
+                    invoice_data['prix'].append(p)    
+                else:
+                    invoice_data['labels'].append(label)
+                
             elif inTheSegment(position['quantites'], item["bounding_box"]):
-                if 'quantites' not in invoice_data:
-                    invoice_data['quantites'] = []
+
                 
                 quantite = item["text"].lower()
                 #pour les cas ou il recupere les deux 
                 if "euro" in quantite :
                     
-                    invoice_data['quantites'].append(quantite.split("x")[0].strip())
-                    if 'prix' not in invoice_data:
-                        invoice_data['prix'] = []
-                    prix=quantite.split("x")[-1].replace(" euro", "").replace(" ", "")
-                    invoice_data['prix'].append(prix)
+                    q=quantite.split("x")[0].strip()
+                    if q.isdigit(): invoice_data['quantites'].append(q)
                     
-                else:    
-                    invoice_data['quantites'].append(item["text"].replace(" x", "").replace(" ", ""))
+                    prix=quantite.split("x")[-1].replace(" euro", "").replace(" ", "").replace(':', '')
+                    if isfloat(prix): invoice_data['prix'].append(prix)
+                    
+                else:
+                    q=item["text"].replace(" x", "").replace(" ", "")
+                    if q.isdigit(): invoice_data['quantites'].append(q)
             elif inTheSegment(position['prix'], item["bounding_box"]):
-                if 'prix' not in invoice_data:
-                    invoice_data['prix'] = []
-                invoice_data['prix'].append(item["text"].replace(" Euro", "").replace(" ", "").replace(':', ''))
+
+                prix=item["text"].replace(" Euro", "").replace(" ", "").replace(':', '')
+                if isfloat(prix): invoice_data['prix'].append(prix)
             else:
-                if 'inconnu' not in invoice_data:
-                    invoice_data['inconnu'] = []
                 invoice_data['inconnu'].append(item["text"])
         else:
             invoice_data['QRid'] = item["INVOICE"]
@@ -98,20 +132,21 @@ def decodeFactures(json_data):
     invoice_data['labels'].pop() 
     invoice_data['TotalValue'] = invoice_data['prix'][-1]
     invoice_data['prix'].pop()
-        
+    
     # Calcul du total
     if 'quantites' in invoice_data and 'prix' in invoice_data:
         total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
         invoice_data['total_Calculated'] = total
-        
+    
+    print(json.dumps(invoice_data, indent=4))    
     return invoice_data    
 
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2019_0007-2747871.json")
+    json_data = load_json_file("json\FAC_2019_1030-1078220.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
-    print(invoice)
+    
     
     engine = connectBd()
     session = createsession(engine)

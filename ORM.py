@@ -76,39 +76,34 @@ class DetailFacture(Base):
 # Chargement des données JSON
 def add_invoice(invoice, session):
     data = invoice
-    
-    
 
-    
+    # Initialize client variable
+    client = None
+
     # Vérification si la facture existe déjà dans la base de données
     existing_invoice = session.query(Facture).filter_by(QRid=data['QRid']).first()
-    
+
     if existing_invoice:
         print(f"La facture avec QRid '{data['QRid']}' existe déjà dans la base de données.")
         # Vous pouvez choisir de gérer cette situation comme vous le souhaitez, par exemple, mettre à jour les données de la facture existante ou ignorer l'ajout
         return
-    
-    
-    
+
     # Vérification si le client existe déjà dans la base de données
     existing_client = session.query(Client).filter_by(QRclientId=data['QRclientId']).first()
-    
+
+    # Création de l'objet Client
     if existing_client:
         print(f"Le client avec QRclientId '{data['QRclientId']}' existe déjà dans la base de données.")
-        # Vous pouvez choisir de gérer cette situation comme vous le souhaitez, par exemple, mettre à jour les données du client existant ou ignorer l'ajout
-        
+        client = existing_client
     else:
-    
-        # Création de l'objet Client
         client = Client(
             QRclientId=data['QRclientId'],
             QRclientCAT=data['QRclientCAT'],
             client=data['client'],
-            adresse=data['adresse1'] + ', ' + data['adresse2']    
+            adresse=data['adresse1'] + ', ' + data['adresse2']
         )
         # Ajout du client à la session
         session.add(client)
-
 
     # Création de l'objet Facture
     facture = Facture(
@@ -117,7 +112,7 @@ def add_invoice(invoice, session):
         QRclientId=data['QRclientId'],
         total_value=float(data['TotalValue']),
         total_Calculated=float(data['total_Calculated']),
-        client=client
+        client=client  # Associating the client object here
     )
 
     # Ajout de la facture à la session
@@ -133,8 +128,4 @@ def add_invoice(invoice, session):
         )
         session.add(detail_facture)
 
-    
     session.commit()
-
-# # Fermeture de la session
-# session.close()
