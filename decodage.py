@@ -1,6 +1,7 @@
 import json
 
-from ORM import add_invoice, createsession
+from ORM import add_invoice, connectBd, createsession
+from surveillance import surveillanceAllInOne
 
 
 def load_json_file(filename):
@@ -112,5 +113,8 @@ if __name__ == "__main__":
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     print(invoice)
     
+    engine = connectBd()
+    session = createsession(engine)
+    add_invoice(json.loads(invoice), session)
     
-    add_invoice(json.loads(invoice), createsession())
+    surveillanceAllInOne('fonction', 'resultat', 'erreur')

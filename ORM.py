@@ -8,40 +8,27 @@ import os
 import pyodbc
 
 def connectBd():
-    # try:
+    try:
         load_dotenv('.env')
+
         SERVER = os.environ['SERVER']
         DATABASE = os.environ['DATABASE']
         USERNAME = os.environ['USERNAME']
         PASSWORD = os.environ['PASSWORD']
         
         # connectionString = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={SERVER};DATABASE={DATABASE};UID={USERNAME};PWD={PASSWORD}'
-        # connectionString = f'DRIVER={{ODBC Driver 17 for SQL Server}};' \
-        #            f'SERVER={SERVER};DATABASE={DATABASE};' \
-        #            f'UID={USERNAME};PWD={PASSWORD};' \
-        #            f'Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
-        
-        connectionString = (
-        'DRIVER={ODBC Driver 18 for SQL Server};'
-        'Server=tcp:ocrbd.database.windows.net,1433;'
-        'Database=mohammed;'
-        'Uid=mohammed;'
-        'Pwd=password<à123;'
-        'Encrypt=yes;'
-        'TrustServerCertificate=no;'
-        'Connection Timeout=30;'
-        )
-        
-        conn = pyodbc.connect(connectionString)
+        connectionString = f'mssql+pyodbc://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}?driver=ODBC+Driver+18+for+SQL+Server'
+       
+        conn = create_engine(connectionString) 
     
-    # except Exception  as e:
-    #     print(f"Erreur lors de la connexion à la BD: {e}")
-    #     return None
-    # else:
+    except Exception  as e:
+        print(f"Erreur lors de la connexion à la BD OCR: {e}")
+        return None
+    else:
         return conn
-def createsession():
-    # Création de la connexion à la base de données
-    engine = connectBd()
+
+def createsession(engine):
+    # Création de la session en utilisant l'engine passé en paramètre
     Session = sessionmaker(bind=engine)
     session = Session()
     session.autocommit = True
