@@ -1,5 +1,7 @@
 import json
 
+from ORM import add_invoice, createsession
+
 
 def load_json_file(filename):
     with open(filename, 'r') as file:
@@ -49,9 +51,9 @@ def decodeFactures(json_data):
             if inThePoint(position['id'], item["bounding_box"]):
                 invoice_data['id'] = item["text"].replace("INVOICE ", "")
             elif inThePoint(position['date'], item["bounding_box"]):
-                invoice_data['date'] = item["text"]
+                invoice_data['date'] = item["text"].replace("issue date ", "")
             elif inThePoint(position['client'], item["bounding_box"]):
-                invoice_data['client'] = item["text"]
+                invoice_data['client'] = item["text"].replace("Bill to ", "")
             elif inThePoint(position['adresse1'], item["bounding_box"]):
                 invoice_data['adresse1'] = item["text"]
             elif inThePoint(position['adresse2'], item["bounding_box"]):
@@ -97,9 +99,9 @@ def decodeFactures(json_data):
     invoice_data['prix'].pop()
         
     # Calcul du total
-    # if 'quantites' in invoice_data and 'prix' in invoice_data:
-    #     total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
-    #     invoice_data['total_Calculated'] = total
+    if 'quantites' in invoice_data and 'prix' in invoice_data:
+        total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
+        invoice_data['total_Calculated'] = total
         
     return invoice_data    
 
@@ -109,3 +111,6 @@ if __name__ == "__main__":
     json_data = load_json_file("json\FAC_2019_0007-2747871.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     print(invoice)
+    
+    
+    add_invoice(json.loads(invoice), createsession())

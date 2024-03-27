@@ -1,13 +1,51 @@
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, DateTime, ARRAY, Float
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import json
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+import pyodbc
 
-# Création de la connexion à la base de données
-engine = create_engine('mssql+pyodbc://username:password@server/database_name?driver=ODBC+Driver+17+for+SQL+Server')
-Session = sessionmaker(bind=engine)
-session = Session()
+def connectBd():
+    # try:
+        load_dotenv('.env')
+        SERVER = os.environ['SERVER']
+        DATABASE = os.environ['DATABASE']
+        USERNAME = os.environ['USERNAME']
+        PASSWORD = os.environ['PASSWORD']
+        
+        # connectionString = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={SERVER};DATABASE={DATABASE};UID={USERNAME};PWD={PASSWORD}'
+        # connectionString = f'DRIVER={{ODBC Driver 17 for SQL Server}};' \
+        #            f'SERVER={SERVER};DATABASE={DATABASE};' \
+        #            f'UID={USERNAME};PWD={PASSWORD};' \
+        #            f'Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
+        
+        connectionString = (
+        'DRIVER={ODBC Driver 18 for SQL Server};'
+        'Server=tcp:ocrbd.database.windows.net,1433;'
+        'Database=mohammed;'
+        'Uid=mohammed;'
+        'Pwd=password<à123;'
+        'Encrypt=yes;'
+        'TrustServerCertificate=no;'
+        'Connection Timeout=30;'
+        )
+        
+        conn = pyodbc.connect(connectionString)
+    
+    # except Exception  as e:
+    #     print(f"Erreur lors de la connexion à la BD: {e}")
+    #     return None
+    # else:
+        return conn
+def createsession():
+    # Création de la connexion à la base de données
+    engine = connectBd()
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    session.autocommit = True
+    return session
 
 # Déclaration de la base de modèle SQLAlchemy
 Base = declarative_base()
@@ -15,6 +53,7 @@ Base = declarative_base()
 # Définition de la classe Client
 class Client(Base):
     __tablename__ = 'client'
+    __table_args__ = {'schema': 'dbo'}  # Ajout de cette ligne pour spécifier le schéma
     
     QRclientId = Column(String, primary_key=True)
     QRclientCAT = Column(String)
@@ -25,10 +64,11 @@ class Client(Base):
 # Définition de la classe Facture
 class Facture(Base):
     __tablename__ = 'facture'
+    __table_args__ = {'schema': 'dbo'}  # Ajout de cette ligne pour spécifier le schéma
     
     QRid = Column(String, primary_key=True)
     QRdate = Column(DateTime)
-    QRclientId = Column(String, ForeignKey('client.QRclientId'))
+    QRclientId = Column(String, ForeignKey('dbo.client.QRclientId'))  # Spécification du schéma
     total_value = Column(Float)
     total_Calculated = Column(Float)
     
@@ -38,9 +78,10 @@ class Facture(Base):
 # Définition de la classe DetailFacture
 class DetailFacture(Base):
     __tablename__ = 'detail_facture'
+    __table_args__ = {'schema': 'dbo'}  # Ajout de cette ligne pour spécifier le schéma
     
     id = Column(Integer, primary_key=True)
-    facture_id = Column(String, ForeignKey('facture.QRid'))
+    facture_id = Column(String, ForeignKey('dbo.facture.QRid'))  # Spécification du schéma
     label = Column(String)
     quantite = Column(Integer)
     prix = Column(Float)
@@ -48,7 +89,6 @@ class DetailFacture(Base):
 # Chargement des données JSON
 def add_invoice(invoice, session):
     data = invoice
-
     # Création de l'objet Client
     client = Client(
         QRclientId=data['QRclientId'],
@@ -83,8 +123,8 @@ def add_invoice(invoice, session):
         )
         session.add(detail_facture)
 
-# Commit des transactions
-session.commit()
+    
+    session.commit()
 
-# Fermeture de la session
-session.close()
+# # Fermeture de la session
+# session.close()
