@@ -70,6 +70,18 @@ def parse_line(line):
     else:
         return None
 
+def premier_nombre_avant_espace(chaine):
+    if len(chaine) > 7: return 'walou'
+    
+    regex = r'^(\d+)\s+\d+'
+    match = re.match(regex, chaine)
+    if match:
+        return match.group(1)
+    else:
+        return 'walou'
+
+
+    
 def decodeFactures(json_data):
     invoice_data = {}
     invoice_data['labels'] = []
@@ -78,17 +90,17 @@ def decodeFactures(json_data):
     invoice_data['inconnu'] =[]
     for item in json_data:
         if 'bounding_box' in item:
-            if inThePoint(position['id'], item["bounding_box"]):
-                invoice_data['id'] = item["text"].replace("INVOICE ", "")
-            elif inThePoint(position['date'], item["bounding_box"]):
-                invoice_data['date'] = item["text"].replace("issue date ", "")
-            elif inThePoint(position['client'], item["bounding_box"]):
-                invoice_data['client'] = item["text"].replace("Bill to ", "")
-            elif inThePoint(position['adresse1'], item["bounding_box"]):
+            if inThePoint(position['id'], item["bounding_box"]):#---------------------INVOICE------------------------------------
+                invoice_data['id'] = item["text"].upper().replace("INVOICE ", "")
+            elif inThePoint(position['date'], item["bounding_box"]):#-----------------date------------------------------------
+                invoice_data['date'] = item["text"].lower().replace("issue date ", "")
+            elif inThePoint(position['client'], item["bounding_box"]):#-------------client------------------------------------
+                invoice_data['client'] = item["text"].lower().replace("bill to ", "").title()
+            elif inThePoint(position['adresse1'], item["bounding_box"]):#---------adresse1------------------------------------
                 invoice_data['adresse1'] = item["text"]
-            elif inThePoint(position['adresse2'], item["bounding_box"]):
+            elif inThePoint(position['adresse2'], item["bounding_box"]):#---------adresse2------------------------------------
                 invoice_data['adresse2'] = item["text"]
-            elif inTheSegment(position['labels'], item["bounding_box"]):
+            elif inTheSegment(position['labels'], item["bounding_box"]):#---------LABELS------------------------------------
                 label = item["text"]
                 resultat= parse_line(label)
                 if resultat :
@@ -99,9 +111,8 @@ def decodeFactures(json_data):
                 else:
                     invoice_data['labels'].append(label)
                 
-            elif inTheSegment(position['quantites'], item["bounding_box"]):
+            elif inTheSegment(position['quantites'], item["bounding_box"]):#---------quantites-----------------------------
 
-                
                 quantite = item["text"].lower()
                 #pour les cas ou il recupere les deux 
                 if "euro" in quantite :
@@ -111,15 +122,17 @@ def decodeFactures(json_data):
                     
                     prix=quantite.split("x")[-1].replace(" euro", "").replace(" ", "").replace(':', '')
                     if isfloat(prix): invoice_data['prix'].append(prix)
-                    
+                elif not( "x" in quantite):
+                    q=premier_nombre_avant_espace(quantite)
+                    if q.isdigit(): invoice_data['quantites'].append(q)
                 else:
                     q=item["text"].replace(" x", "").replace(" ", "")
                     if q.isdigit(): invoice_data['quantites'].append(q)
-            elif inTheSegment(position['prix'], item["bounding_box"]):
+            elif inTheSegment(position['prix'], item["bounding_box"]):#---------------Prix-----------------------------------
 
                 prix=item["text"].replace(" Euro", "").replace(" ", "").replace(':', '')
                 if isfloat(prix): invoice_data['prix'].append(prix)
-            else:
+            else:#--------------------------------------------------------------------inconnu---------------------------------
                 invoice_data['inconnu'].append(item["text"])
         else:
             invoice_data['QRid'] = item["INVOICE"]
@@ -144,7 +157,7 @@ def decodeFactures(json_data):
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2019_0040-4152451.json")
+    json_data = load_json_file("json\FAC_2023_0166-1870080.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     
     

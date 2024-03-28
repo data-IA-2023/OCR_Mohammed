@@ -61,6 +61,7 @@ class Facture(Base):
     
     # Définir la relation avec le client
     client = relationship("Client", back_populates="factures")
+    detail_factures = relationship("DetailFacture", back_populates="facture")
 
 # Définition de la classe DetailFacture
 class DetailFacture(Base):
@@ -72,7 +73,8 @@ class DetailFacture(Base):
     label = Column(String)
     quantite = Column(Integer)
     prix = Column(Float)
-
+    # Définir la relation avec la facture
+    facture = relationship("Facture", back_populates="detail_factures")
 # Chargement des données JSON
 def add_invoice(invoice, session):
     data = invoice
