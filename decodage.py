@@ -28,11 +28,22 @@ def inTheSegment(segment, box):
     x_max = max(box[::2])
     y_max = max(box[1::2])
 
-    if (x1 <= x_max and x2 >= x_min and
-        y1 <= y_max and y2 >= y_min):
+    # if (x1 <= x_max and x2 >= x_min and
+    #     y1 <= y_max and y2 >= y_min):
+    #     return True
+
+    # Vérifie si un coin de la boîte se trouve sur le segment
+    if (x1 <= x_max and x1 >= x_min and
+        y1 <= y_max and y1 <= y_min):
+        return True
+    if (x2 <= x_max and x2 >= x_min and
+        y2 >= y_max and y2 >= y_min):
         return True
 
     return False
+
+
+
 
 position = { 
     'id': [143, 30],
