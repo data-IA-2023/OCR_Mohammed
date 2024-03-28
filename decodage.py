@@ -97,7 +97,7 @@ def decodeFactures(json_data):
             elif inThePoint(position['client'], item["bounding_box"]):#-------------client------------------------------------
                 invoice_data['client'] = item["text"].lower().replace("bill to ", "").title()
             elif inThePoint(position['adresse1'], item["bounding_box"]):#---------adresse1------------------------------------
-                invoice_data['adresse1'] = item["text"]
+                invoice_data['adresse1'] = item["text"].lower().replace("address ", "").title()
             elif inThePoint(position['adresse2'], item["bounding_box"]):#---------adresse2------------------------------------
                 invoice_data['adresse2'] = item["text"]
             elif inTheSegment(position['labels'], item["bounding_box"]):#---------LABELS------------------------------------
