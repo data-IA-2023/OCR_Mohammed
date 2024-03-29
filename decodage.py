@@ -134,7 +134,10 @@ def decodeFactures(json_data):
                     prix=quantite.split("x")[-1].replace(" euro", "").replace(" ", "").replace(':', '')
                     if isfloat(prix): invoice_data['prix'].append(prix)
                 elif not( "x" in quantite):
-                    q=premier_nombre_avant_espace(quantite)
+                    if " " in quantite:# dans le cas ou x est ocrise come 2 ou . avec un espace
+                        q=premier_nombre_avant_espace(quantite)
+                    else:              # dans le cas ou x est ocrise come 2 ou .
+                        q=quantite[:-1]    
                     if q.isdigit(): invoice_data['quantites'].append(q)
                 else:
                     q=quantite.replace(" x", "").replace(" ", "")
