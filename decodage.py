@@ -164,14 +164,14 @@ def decodeFactures(json_data):
     if 'quantites' in invoice_data and 'prix' in invoice_data:
         total = sum(int(q) * float(p) for q, p in zip(invoice_data['quantites'], invoice_data['prix']))
         invoice_data['total_Calculated'] = total
-    
+        invoice_data['delta'] = total - float(invoice_data['TotalValue'])
     print(json.dumps(invoice_data, indent=4))    
     return invoice_data    
 
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2021_0477-759132.json")
+    json_data = load_json_file("json\FAC_2019_0716-1322288.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     
     

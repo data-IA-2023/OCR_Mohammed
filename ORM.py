@@ -58,7 +58,7 @@ class Facture(Base):
     QRclientId = Column(String, ForeignKey('dbo.client.QRclientId'))  # Spécification du schéma
     total_value = Column(Float)
     total_Calculated = Column(Float)
-    
+    delta = Column(Float)
     # Définir la relation avec le client
     client = relationship("Client", back_populates="factures")
     detail_factures = relationship("DetailFacture", back_populates="facture")
@@ -114,6 +114,7 @@ def add_invoice(invoice, session):
         QRclientId=data['QRclientId'],
         total_value=float(data['TotalValue']),
         total_Calculated=float(data['total_Calculated']),
+        delta=float(data['delta']),
         client=client  # Associating the client object here
     )
 
