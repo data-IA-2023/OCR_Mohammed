@@ -85,7 +85,7 @@ def premier_nombre_avant_espace(chaine):
     if len(chaine) > 7: return 'walou'
     
     regex = r'^(\d+)\s+\d+'
-    match = re.match(regex, chaine)
+    match = re.match(regex, chaine.lower())
     if match:
         return match.group(1)
     else:
@@ -137,7 +137,7 @@ def decodeFactures(json_data):
                     q=premier_nombre_avant_espace(quantite)
                     if q.isdigit(): invoice_data['quantites'].append(q)
                 else:
-                    q=item["text"].replace(" x", "").replace(" ", "")
+                    q=quantite.replace(" x", "").replace(" ", "")
                     if q.isdigit(): invoice_data['quantites'].append(q)
             elif inTheSegment(position['prix'], item["bounding_box"]):#---------------Prix-----------------------------------
 
@@ -168,7 +168,7 @@ def decodeFactures(json_data):
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2023_0166-1870080.json")
+    json_data = load_json_file("json\FAC_2021_0477-759132.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     
     
