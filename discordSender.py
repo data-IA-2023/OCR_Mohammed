@@ -4,10 +4,9 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv('.env')
-url_webhook = os.environ['DISCORD']
 
-def envoyer_message_webhook(url_webhook, message):
-    
+def DiscordSend(message=''):
+    url_webhook = os.environ['DISCORD']
 
     data = {
         "content": message
@@ -23,4 +22,4 @@ def envoyer_message_webhook(url_webhook, message):
 
 
 if __name__ == "__main__":
-    envoyer_message_webhook(url_webhook, 'Bsahtek le msg')
+    DiscordSend('Bsahtek le msg')

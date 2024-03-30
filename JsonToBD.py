@@ -16,7 +16,7 @@ def exportJson(filename='json\FAC_2019_0002-521208.json'):
         print(f'---------------------------------------------------------------------------')
         print(f'---------------Export du fichier : {filename}------------------------------')
         print(f'---------------------------------------------------------------------------')
-        json_data = load_json_file(os.path.join(json_dir, filename))
+        json_data = load_json_file(filename)
         invoice = json.dumps(decodeFactures(json_data), indent=4)
         print(invoice)
 

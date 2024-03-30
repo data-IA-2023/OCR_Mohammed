@@ -63,8 +63,6 @@ def ocr_facture(image_path):
     return combined_results
 
 
-import os
-import json
 
 def factures_To_Jsons(input_folder, output_folder):
 

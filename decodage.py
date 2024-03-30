@@ -51,8 +51,8 @@ position = {
     'client': [86, 89],
     'adresse1': [79, 125],
     'adresse2': [79, 141],
-    'labels':[48, 193,48, 1037],
-    'quantites':[517, 193,517, 1037],
+    'labels':[86, 193,86, 1037],
+    'quantites':[518, 193,518, 1037],
     'prix':[652, 193,652, 1037],
 }
 
@@ -82,15 +82,31 @@ def parse_line(line):
         return None
 
 def premier_nombre_avant_espace(chaine):
-    if len(chaine) > 7: return 'walou'
+    # Vérifie si la longueur de la chaîne est supérieure à 7
+    if len(chaine) > 7:
+        return 'walou'
     
-    regex = r'^(\d+)\s+\d+'
-    match = re.match(regex, chaine.lower())
+    # Expression régulière pour extraire le premier nombre avant un espace
+    regex = r'^(\d+)\s'
+    match = re.match(regex, chaine)
+    
     if match:
         return match.group(1)
     else:
         return 'walou'
 
+def premier_nombre(chaine):
+    nombres = re.findall(r'\d+', chaine)
+    if nombres:
+        return int(nombres[0])
+    else:
+        return None
+def dernier_nombre(chaine):
+    nombres = re.findall(r'\d+(?:\.\d+)?', chaine)
+    if nombres:
+        return float(nombres[-1])
+    else:
+        return None
 
     
 def decodeFactures(json_data):
@@ -125,27 +141,35 @@ def decodeFactures(json_data):
             elif inTheSegment(position['quantites'], item["bounding_box"]):#---------quantites-----------------------------
 
                 quantite = item["text"].lower()
+                
                 #pour les cas ou il recupere les deux 
                 if "euro" in quantite :
                     
-                    q=quantite.split("x")[0].strip()
-                    if q.isdigit(): invoice_data['quantites'].append(q)
-                    
-                    prix=quantite.split("x")[-1].replace(" euro", "").replace(" ", "").replace(':', '')
-                    if isfloat(prix): invoice_data['prix'].append(prix)
+                    # q=quantite.split("x")[0].strip()
+                    q=premier_nombre(quantite)
+                    if q : invoice_data['quantites'].append(q)
+                    prix=dernier_nombre(quantite)
+                    # prix=quantite.split("x")[-1].replace("euro", "").replace(" ", "").replace(':', '')
+                    if prix: invoice_data['prix'].append(prix)
                 elif not( "x" in quantite):
                     if " " in quantite:# dans le cas ou x est ocrise come 2 ou . avec un espace
-                        q=premier_nombre_avant_espace(quantite)
-                    else:              # dans le cas ou x est ocrise come 2 ou .
-                        q=quantite[:-1]    
-                    if q.isdigit(): invoice_data['quantites'].append(q)
+                        quantite.replace(" ", "")
+                        if len(quantite) > 5: continue
+                        q=premier_nombre(quantite)
+                        if q: invoice_data['quantites'].append(q)   
+                    else:
+                        q=premier_nombre(quantite)
+                        if q:
+                            if q % 10 == 2: q = q // 10 # dans le cas ou x est ocrise come 2
+                            invoice_data['quantites'].append(q)        
                 else:
-                    q=quantite.replace(" x", "").replace(" ", "")
-                    if q.isdigit(): invoice_data['quantites'].append(q)
+                    
+                    q=premier_nombre(quantite)
+                    if q: invoice_data['quantites'].append(q)
             elif inTheSegment(position['prix'], item["bounding_box"]):#---------------Prix-----------------------------------
-
-                prix=item["text"].replace(" Euro", "").replace(" ", "").replace(':', '')
-                if isfloat(prix): invoice_data['prix'].append(prix)
+                prix=item["text"].lower().replace("euro", "").replace(" ", "")
+                prix=dernier_nombre(prix)
+                if prix: invoice_data['prix'].append(prix)
             else:#--------------------------------------------------------------------inconnu---------------------------------
                 invoice_data['inconnu'].append(item["text"])
         else:
@@ -171,7 +195,7 @@ def decodeFactures(json_data):
 
 if __name__ == "__main__":
     # Load JSON data from file
-    json_data = load_json_file("json\FAC_2019_0716-1322288.json")
+    json_data = load_json_file("json\FAC_2019_0275-165798.json")
     invoice = json.dumps(decodeFactures(json_data), indent=4)
     
     
