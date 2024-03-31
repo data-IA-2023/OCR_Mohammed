@@ -1,10 +1,15 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func, text
 from ORM import Client, Facture, DetailFacture, connectBd
 import os
+import pygwalker as pyg
+from pygwalker.api.streamlit import init_streamlit_comm, get_streamlit_html
+import streamlit.components.v1 as components
 
 # Fonction pour se connecter à la base de données
+
 def get_session():
     engine = connectBd()
     if engine is not None:
@@ -62,34 +67,86 @@ def display_invoice_info(session, qr_id):
     else:
         st.write("Aucune facture trouvée avec ce QRid.")
 
+
+
+# Fonction pour afficher le bilan comptable
+
+def display_financial_statement(session):
+    # Exécuter la requête SQL pour obtenir les données de la vue
+    result = session.execute(text("""
+    SELECT 
+        facture_QRid,
+        facture_QRdate,
+        facture_QRclientId,
+        client_QRclientCAT,
+        client_client,
+        client_adresse,
+        client_QRclientId,
+        detail_facture_label,
+        detail_facture_quantite,
+        detail_facture_prix,
+        facture_total_value,
+        facture_total_Calculated,
+        facture_delta
+    FROM vue_generale
+    """))
+    
+    # Convertir les résultats en DataFrame Pandas
+    df = pd.DataFrame(result.fetchall(), columns=result.keys())
+
+    # Afficher le DataFrame complet si rien n'est sélectionné
+    if not st.sidebar.checkbox("Filtrer les données"):
+        components.html(get_pyg_html(df), width=1400, height=918, scrolling=False)#
+        st.dataframe(df)
+    else:
+        # Filtrer les données par année si sélectionnée
+        st.sidebar.subheader("Filtrer par année")
+        selected_year = st.sidebar.selectbox("Sélectionnez une année :", options=pd.to_datetime(df['facture_QRdate']).dt.year.unique())
+        filtered_df = df[pd.to_datetime(df['facture_QRdate']).dt.year == selected_year]
+        
+        # Filtrer les données par produit avec autocomplétion
+        st.sidebar.subheader("Filtrer par produit")
+        selected_product = st.sidebar.selectbox("Sélectionnez un produit :", options=df['detail_facture_label'].unique(), index=0)
+        filtered_df = filtered_df[filtered_df['detail_facture_label'] == selected_product]
+
+        # Afficher les données filtrées
+        st.dataframe(filtered_df)
+
+# You should cache your pygwalker renderer, if you don't want your memory to explode
+@st.cache_resource
+def get_pyg_html(df: pd.DataFrame) -> str:
+    # Lorsque vous devez publier votre application, vous devez définir `debug=False`, pour empêcher les autres utilisateurs d'écrire votre fichier de configuration.
+    # Si vous souhaitez utiliser la fonctionnalité d'enregistrement de la configuration des graphiques, définissez `debug=True`
+    html = get_streamlit_html(df, use_kernel_calc=True, spec="./gw0.json")#, debug=False
+    return html
+
+
 # Fonction principale de l'application
 def main():
-    # Supprimer les marges à gauche et à droite
-    # st.markdown(
-    #     """
-    #     <style>
-    #     .reportview-container .main .block-container {
-    #         padding-top: 0rem !important;
-    #         padding-right: 0rem !important;
-    #         padding-left: 0rem !important;
-    #         padding-bottom: 0rem !important;
-    #     }
-    #     </style>
-    #     """,
-    #     unsafe_allow_html=True
-    # )
-    st.set_page_config(layout="wide")
+    
+    st.set_page_config(
+    page_title="INVOICE OCR",
+    layout="wide"
+    )
+    
+    st.sidebar.image('logo.jpg')
     session = get_session()
 
     if session:
         # Récupérer les IDs de facture depuis la base de données
         facture_ids = get_facture_ids(session)
-        st.sidebar.image('logo.jpg')
-        # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
-        qr_id = st.sidebar.selectbox("Entrez l'ID de la facture :", options=facture_ids)
 
-        if qr_id:
-            display_invoice_info(session, qr_id)
+        # Boutons de la barre latérale pour basculer entre l'affichage des factures et l'affichage du bilan comptable
+        mode = st.sidebar.radio("Mode d'affichage :", options=["Factures", "Bilan Comptable"])
+
+        if mode == "Factures":
+            # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
+            qr_id = st.sidebar.selectbox("Entrez l'ID de la facture :", options=facture_ids)
+
+            if qr_id:
+                display_invoice_info(session, qr_id)
+        else:
+            display_financial_statement(session)
 
         session.close()
 

@@ -13,3 +13,4 @@ pyodbc
 azure-ai-vision-imageanalysis
 azure.cognitiveservices.vision.computervision
 pillow
+pygwalker
