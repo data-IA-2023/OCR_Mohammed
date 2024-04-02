@@ -14,3 +14,5 @@ azure-ai-vision-imageanalysis
 azure.cognitiveservices.vision.computervision
 pillow
 pygwalker
+streamlit
+streamlit-pandas-profiling

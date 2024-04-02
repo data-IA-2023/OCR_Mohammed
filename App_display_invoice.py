@@ -7,6 +7,7 @@ import os
 import pygwalker as pyg
 from pygwalker.api.streamlit import init_streamlit_comm, get_streamlit_html
 import streamlit.components.v1 as components
+import matplotlib.pyplot as plt
 
 # Fonction pour se connecter à la base de données
 
@@ -97,7 +98,8 @@ def display_financial_statement(session):
     # Afficher le DataFrame complet si rien n'est sélectionné
     if not st.sidebar.checkbox("Filtrer les données"):
         components.html(get_pyg_html(df), width=1400, height=918, scrolling=False)#
-        st.dataframe(df)
+        with st.expander("Table detail"):
+            st.dataframe(df)
     else:
         # Filtrer les données par année si sélectionnée
         st.sidebar.subheader("Filtrer par année")
@@ -120,6 +122,18 @@ def get_pyg_html(df: pd.DataFrame) -> str:
     html = get_streamlit_html(df, use_kernel_calc=True, spec="./gw0.json")#, debug=False
     return html
 
+def Rapport_erreur(session):
+    # Exécuter la requête SQL pour obtenir les données de la vue
+    result = session.execute(text("""
+    SELECT 
+        *
+    FROM erruernombre;
+    """))
+    
+    # Convertir les résultats en DataFrame Pandas
+    df = pd.DataFrame(result.fetchall(), columns=result.keys())
+    
+    st.dataframe(df)
 
 # Fonction principale de l'application
 def main():
@@ -137,7 +151,7 @@ def main():
         facture_ids = get_facture_ids(session)
 
         # Boutons de la barre latérale pour basculer entre l'affichage des factures et l'affichage du bilan comptable
-        mode = st.sidebar.radio("Mode d'affichage :", options=["Factures", "Bilan Comptable"])
+        mode = st.sidebar.radio("Mode d'affichage :", options=["Factures", "Bilan Comptable", "Rapport D'erreur"])
 
         if mode == "Factures":
             # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
@@ -145,9 +159,11 @@ def main():
 
             if qr_id:
                 display_invoice_info(session, qr_id)
-        else:
+        elif mode == "Bilan Comptable" :
             display_financial_statement(session)
-
+        elif mode == "Rapport D'erreur" :
+            Rapport_erreur(session)
+            
         session.close()
 
 # Exécuter l'application
