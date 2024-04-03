@@ -64,7 +64,7 @@ def ocr_facture(image_path):
 
 
 
-def factures_To_Jsons(input_folder, output_folder):
+def factures_To_Jsons(input_folder = "factures", output_folder = "json"):
 
     # Parcourir tous les fichiers dans le dossier d'entrée
     for filename in os.listdir(input_folder):

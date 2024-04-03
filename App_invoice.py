@@ -2,12 +2,16 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func, text
+from JsonToBD import exportAll
 from ORM import Client, Facture, DetailFacture, connectBd
 import os
 import pygwalker as pyg
 from pygwalker.api.streamlit import init_streamlit_comm, get_streamlit_html
 import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
+
+from azureOCR import factures_To_Jsons
+from invoiceListe import download_invoices_from_json, save_list_factures
 
 # Fonction pour se connecter à la base de données
 
@@ -144,6 +148,13 @@ def main():
     )
     
     st.sidebar.image('logo.jpg')
+    if st.sidebar.button('Update'):
+        save_list_factures()
+        download_invoices_from_json('json/factoras.json')
+        factures_To_Jsons(input_folder = "factures", output_folder = "json")
+        exportAll()
+        
+        
     session = get_session()
 
     if session:
@@ -169,3 +180,4 @@ def main():
 # Exécuter l'application
 if __name__ == "__main__":
     main()
+

@@ -72,7 +72,7 @@ def download_invoices_from_json(file):
 
 def save_list_factures():
     # chemin_json = os.path.join('json', f"factoras.json")
-    chemin_json = os.path("factoras.json")
+    chemin_json = os.path.join('json', f"factoras.json")
     factures = list_factures()
 
     if factures:
