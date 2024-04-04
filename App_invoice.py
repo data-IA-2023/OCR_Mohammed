@@ -14,6 +14,9 @@ from azureOCR import factures_To_Jsons
 from invoiceListe import download_invoices_from_json, save_list_factures
 from surveillance import inserer_donnees_surveillance, surveillanceAllInOne
 
+import plotly.express as px
+import plotly.graph_objects as go
+
 # Fonction pour se connecter à la base de données
 
 def get_session():
@@ -120,7 +123,7 @@ def display_invoice_info(session, qr_id):
 #         st.dataframe(filtered_df)
 
 
-def Bilan(session, annee=None, categorie_client=None, client=None, produit=None):
+def Bilan(session, annees=None, categories_client=None, clients=None, produits=None):
     # Définir la requête SQL de base
     sql_query = """
     SELECT 
@@ -142,21 +145,35 @@ def Bilan(session, annee=None, categorie_client=None, client=None, produit=None)
     
     # Construire les clauses WHERE en fonction des filtres fournis
     where_clauses = []
-    if annee is not None:
-        where_clauses.append(f"YEAR(facture_QRdate) = {annee}")
-    if categorie_client is not None:
-        where_clauses.append(f"client_QRclientCAT = '{categorie_client}'")
-    if client is not None:
-        where_clauses.append(f"client_client = '{client}'")
-    if produit is not None:
-        where_clauses.append(f"detail_facture_label = '{produit}'")
+    if annees is not None:
+        year_conditions = " OR ".join([f"YEAR(facture_QRdate) = :year_{i}" for i, year in enumerate(annees)])
+        where_clauses.append(f"({year_conditions})")
+    if categories_client is not None:
+        cat_conditions = " OR ".join([f"client_QRclientCAT = :cat_{i}" for i, cat in enumerate(categories_client)])
+        where_clauses.append(f"({cat_conditions})")
+    if clients is not None:
+        client_conditions = " OR ".join([f"client_client = :client_{i}" for i, client in enumerate(clients)])
+        where_clauses.append(f"({client_conditions})")
+    if produits is not None:
+        produit_conditions = " OR ".join([f"detail_facture_label = :produit_{i}" for i, produit in enumerate(produits)])
+        where_clauses.append(f"({produit_conditions})")
     
     # Concaténer les clauses WHERE si nécessaire
     if where_clauses:
         sql_query += " WHERE " + " AND ".join(where_clauses)
     
     # Exécuter la requête SQL avec les filtres
-    result = session.execute(text(sql_query))
+    params = {}
+    if annees:
+        params.update({f"year_{i}": int(year) for i, year in enumerate(annees)})
+    if categories_client:
+        params.update({f"cat_{i}": cat for i, cat in enumerate(categories_client)})
+    if clients:
+        params.update({f"client_{i}": client for i, client in enumerate(clients)})
+    if produits:
+        params.update({f"produit_{i}": produit for i, produit in enumerate(produits)})
+        
+    result = session.execute(text(sql_query), params)
     
     # Convertir les résultats en DataFrame Pandas
     df = pd.DataFrame(result.fetchall(), columns=result.keys())
@@ -209,7 +226,7 @@ def show_bilan(session):
     selected_category = st.sidebar.multiselect("Sélectionnez une catégorie de client :", options=client_cat_options)
     selected_client = st.sidebar.multiselect("Sélectionnez un client :", options=client_options)
     selected_product = st.sidebar.multiselect("Sélectionnez un produit :", options=product_options)
-  
+    Afficher_erreur= st.sidebar.toggle('Filtres les factures erronées')
   
     # Appliquer les filtres en supprimant les valeurs None
     selected_year = [year for year in selected_year if year is not None]
@@ -223,19 +240,24 @@ def show_bilan(session):
     selected_product = selected_product if selected_product else None
   
     # Appliquer les filtres
-    filtered_df = Bilan(session=session, annee=selected_year, categorie_client=selected_category, client=selected_client, produit=selected_product)
+    filtered_df = Bilan(session=session, annees=selected_year, categories_client=selected_category, clients=selected_client, produits=selected_product)
+    
+    if Afficher_erreur== True:
+        filtered_df=filtered_df[abs(filtered_df['facture_delta']) < 0.5]
+    
     
     # Afficher le DataFrame filtré
     st.dataframe(filtered_df)
     
     # Calculer le chiffre d'affaires total en regroupant par facture
-    chiffre_affaires_total = filtered_df.groupby('facture_QRid')['facture_total_value'].max().sum()
-    
-    # Convertir en chaîne pour l'affichage
-    chiffre_affaires_string = chiffre_affaires_total
+    chiffre_affaires_facture = filtered_df.groupby('facture_QRid')['facture_total_value'].max().sum()
+    chiffre_affaires_total=(filtered_df['detail_facture_prix']*filtered_df['detail_facture_quantite']).sum()
     
     # Afficher le chiffre d'affaires total
-    st.write(f"Chiffre d'affaires total : \n{chiffre_affaires_string} Euros")
+    st.write(f"Chiffre d'affaires total Calculé : \n{chiffre_affaires_total} Euros")
+    # Afficher le chiffre d'affaires total
+    st.write(f"Chiffre d'affaires des factures (Total Scanné): \n{chiffre_affaires_facture} Euros")
+    # components.html(get_pyg_html(filtered_df), width=1400, height=918, scrolling=False)
 
 
 
@@ -248,7 +270,6 @@ def get_pyg_html(df: pd.DataFrame) -> str:
     return html
 
 def Rapport_erreur(session):
-    # Exécuter la requête SQL pour obtenir les données de la vue
     result = session.execute(text("""
     SELECT 
         *
@@ -260,7 +281,31 @@ def Rapport_erreur(session):
     st.subheader("Taux d'erreur :")
     st.dataframe(df)
     
-    st.subheader("Monitoring :")
+    
+    # Vos calculs pour obtenir les données nécessaires pour le graphique
+    total_factures = df['total_factures'].iloc[0]
+    erreur_nombre = df['erreur_nombre'].iloc[0]
+    labels = ['Factures Sans Erreur', 'Factures erronées']
+    sizes = [total_factures - erreur_nombre, erreur_nombre]
+    colors = ['lightskyblue', 'red']
+    # Création du graphique
+    fig = px.pie(names=labels, values=sizes, title="Taux d'erreur :",  color_discrete_sequence=colors)
+    st.write(fig)
+        
+    
+    st.subheader("Erreur dans les prix des produits :")
+    result_monitoring = session.execute(text("""
+    SELECT 
+        *
+    FROM erreurPrix;
+    """))
+    
+    # Convertir les résultats en DataFrame Pandas
+    df_monitoring = pd.DataFrame(result_monitoring.fetchall(), columns=result_monitoring.keys())
+    st.dataframe(df_monitoring)
+
+def monitoring(session):
+    st.subheader("monitoring :")
     # Exécuter la requête SQL pour obtenir les données de la vue
     result_monitoring = session.execute(text("""
     SELECT 
@@ -272,6 +317,7 @@ def Rapport_erreur(session):
     df_monitoring = pd.DataFrame(result_monitoring.fetchall(), columns=result_monitoring.keys())
     st.dataframe(df_monitoring)
 
+
 def update():
     if st.button('Update'):
         with st.spinner('Wait for it...'):
@@ -282,8 +328,8 @@ def update():
         st.success('Done!')
 
 
-# Fonction principale de l'application
 
+st.cache_data()
 def newsession():
     # Récupérer la valeur actuelle de la variable d'environnement OCRsession
     current_value = os.getenv("OCRsession")
@@ -324,7 +370,7 @@ def main():
         facture_ids = get_facture_ids(session)
 
         # Boutons de la barre latérale pour basculer entre l'affichage des factures et l'affichage du bilan comptable
-        mode = st.sidebar.radio("MENU :", options=["Factures", "Bilan Comptable", "Rapport D'erreur", "Mise à Jour"])
+        mode = st.sidebar.radio("MENU :", options=["Factures", "Bilan Comptable", "Rapport D'erreur", "Monitoring", "Mise à Jour"])
 
         if mode == "Factures":
             # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
@@ -336,6 +382,8 @@ def main():
             show_bilan(session)
         elif mode == "Rapport D'erreur" :
             Rapport_erreur(session)
+        elif mode == "Monitoring" :
+            monitoring(session)
         elif mode =="Mise à Jour":
             update()
             
