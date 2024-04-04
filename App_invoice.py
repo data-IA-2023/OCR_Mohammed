@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 from azureOCR import factures_To_Jsons
 from invoiceListe import download_invoices_from_json, save_list_factures
+from surveillance import inserer_donnees_surveillance, surveillanceAllInOne
 
 # Fonction pour se connecter à la base de données
 
@@ -20,7 +21,7 @@ def get_session():
     if engine is not None:
         Session = sessionmaker(bind=engine)
         session = Session()
-        return session
+        return {'session' : session, 'engine' : engine }
     else:
         st.error("Erreur lors de la connexion à la base de données.")
 
@@ -136,10 +137,50 @@ def Rapport_erreur(session):
     
     # Convertir les résultats en DataFrame Pandas
     df = pd.DataFrame(result.fetchall(), columns=result.keys())
-    
+    st.subheader("Taux d'erreur :")
     st.dataframe(df)
+    
+    st.subheader("Monitoring :")
+    # Exécuter la requête SQL pour obtenir les données de la vue
+    result_monitoring = session.execute(text("""
+    SELECT 
+        *
+    FROM table_surveillance;
+    """))
+    
+    # Convertir les résultats en DataFrame Pandas
+    df_monitoring = pd.DataFrame(result_monitoring.fetchall(), columns=result_monitoring.keys())
+    st.dataframe(df_monitoring)
+
+def update():
+    if st.button('Update'):
+        with st.spinner('Wait for it...'):
+            save_list_factures()
+            download_invoices_from_json('json/factoras.json')
+            factures_To_Jsons(input_folder = "factures", output_folder = "json")
+            exportAll()
+        st.success('Done!')
+
 
 # Fonction principale de l'application
+
+def newsession():
+    # Récupérer la valeur actuelle de la variable d'environnement OCRsession
+    current_value = os.getenv("OCRsession")
+
+    if current_value is not None and current_value.isdigit():
+        incremented_value = str(int(current_value) + 1)
+    else:
+        incremented_value = "1"
+
+    try:
+        # Définir la variable d'environnement OCRsession avec la nouvelle valeur
+        os.environ["OCRsession"] = incremented_value
+    except Exception as e:
+        print("Une erreur s'est produite lors de la modification de la variable d'environnement :", e)
+
+    return incremented_value
+
 def main():
     
     st.set_page_config(
@@ -148,21 +189,22 @@ def main():
     )
     
     st.sidebar.image('logo.jpg')
-    if st.sidebar.button('Update'):
-        save_list_factures()
-        download_invoices_from_json('json/factoras.json')
-        factures_To_Jsons(input_folder = "factures", output_folder = "json")
-        exportAll()
-        
-        
-    session = get_session()
 
+        
+    BDconnexion= get_session()    
+    session = BDconnexion['session']
+    # conn = BDconnexion['engine']
+    
+    newsession() # une nouvelle session pour le monitoring
+    
+    surveillanceAllInOne("Démarrage de l'application",'No problemo', 200)
+    
     if session:
         # Récupérer les IDs de facture depuis la base de données
         facture_ids = get_facture_ids(session)
 
         # Boutons de la barre latérale pour basculer entre l'affichage des factures et l'affichage du bilan comptable
-        mode = st.sidebar.radio("Mode d'affichage :", options=["Factures", "Bilan Comptable", "Rapport D'erreur"])
+        mode = st.sidebar.radio("Mode d'affichage :", options=["Factures", "Bilan Comptable", "Rapport D'erreur", "Mise à Jour"])
 
         if mode == "Factures":
             # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
@@ -174,6 +216,8 @@ def main():
             display_financial_statement(session)
         elif mode == "Rapport D'erreur" :
             Rapport_erreur(session)
+        elif mode =="Mise à Jour":
+            update()
             
         session.close()
 
