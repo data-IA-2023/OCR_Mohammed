@@ -395,9 +395,13 @@ def main():
     session = BDconnexion['session']
     # conn = BDconnexion['engine']
     
-    newsession() # une nouvelle session pour le monitoring
     
-    surveillanceAllInOne("Démarrage de l'application",'No problemo', 200)
+    # Vérifiez si la fonction de démarrage a déjà été exécutée
+    if "fonction_demarrage_executed" not in st.session_state:
+        newsession()
+        st.session_state.fonction_demarrage_executed = True
+        surveillanceAllInOne("Démarrage de l'application","OK", 200)
+    
     
     if session:
         # Récupérer les IDs de facture depuis la base de données
@@ -405,24 +409,26 @@ def main():
 
         # Boutons de la barre latérale pour basculer entre l'affichage des factures et l'affichage du bilan comptable
         mode = st.sidebar.radio("MENU :", options=["Factures", "Bilan Comptable", "Rapport D'erreur", "Monitoring", "Mise à Jour"])
+        try:
+            if mode == "Factures":
+                # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
+                qr_id = st.sidebar.selectbox("Entrez l'ID de la facture :", options=facture_ids)
 
-        if mode == "Factures":
-            # Demander à l'utilisateur d'entrer le QRid de la facture avec auto-complétion
-            qr_id = st.sidebar.selectbox("Entrez l'ID de la facture :", options=facture_ids)
-
-            if qr_id:
-                display_invoice_info(session, qr_id)
-        elif mode == "Bilan Comptable" :
-            show_bilan(session)
-        elif mode == "Rapport D'erreur" :
-            Rapport_erreur(session)
-        elif mode == "Monitoring" :
-            monitoring(session)
-        elif mode =="Mise à Jour":
-            update()
-            
+                if qr_id:
+                    display_invoice_info(session, qr_id)
+            elif mode == "Bilan Comptable" :
+                show_bilan(session)
+            elif mode == "Rapport D'erreur" :
+                Rapport_erreur(session)
+            elif mode == "Monitoring" :
+                monitoring(session)
+            elif mode =="Mise à Jour":
+                update()
+        except Exception as e:
+             print(f"Une erreur s'est produite dans la fonction {mode} :", type(e).__name__)
+             surveillanceAllInOne(mode,str(type(e).__name__), 400)
         session.close()
-
+        
 # Exécuter l'application
 if __name__ == "__main__":
     main()

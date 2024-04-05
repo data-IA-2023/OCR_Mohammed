@@ -50,7 +50,7 @@ def surveillanceAllInOne(fonction, resultat, erreur):
     try:
         
         if (erreur==400):
-            msg=f"{datetime.now()} et dans le session: {session}  une erreur dans la l'API : {fonction} code erreur : {erreur} ."
+            msg=f"{datetime.now()} | le session: {session}  | erreur dans la l'API : {fonction}| type: { resultat}| code erreur : {erreur} ."
             envoyer_email(os.environ['TOEMAIL'], f'⚠️ Erreur in {fonction} ⚠️', msg )
             DiscordSend(message=msg)
     
