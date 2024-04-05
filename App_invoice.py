@@ -250,7 +250,9 @@ def show_bilan(session):
     st.dataframe(filtered_df)
     
     # Calculer le chiffre d'affaires total en regroupant par facture
+
     chiffre_affaires_facture = filtered_df.groupby('facture_QRid')['facture_total_value'].max().sum()
+    
     chiffre_affaires_total=(filtered_df['detail_facture_prix']*filtered_df['detail_facture_quantite']).sum()
     
     # Afficher le chiffre d'affaires total
@@ -259,10 +261,29 @@ def show_bilan(session):
     st.write(f"Chiffre d'affaires des factures (Total Scanné): \n{chiffre_affaires_facture} Euros")
     # components.html(get_pyg_html(filtered_df), width=1400, height=918, scrolling=False)
 
+    f_df=filtered_df[['facture_QRid', 'client_QRclientCAT', 'facture_total_value']].groupby('facture_QRid').first().reset_index()
+    f_df=f_df[['client_QRclientCAT', 'facture_total_value']].groupby('client_QRclientCAT').sum().reset_index()
+    
+    fig = px.pie(f_df, names='client_QRclientCAT', values='facture_total_value', title='Total par catégorie')
+    st.plotly_chart(fig, use_container_width=True)
+    st.write(f_df)
+    
+    f_df_prod = filtered_df[['detail_facture_label', 'facture_total_value']].groupby('detail_facture_label').sum().reset_index()
+    
+    fig_prod = px.bar(f_df_prod, x='detail_facture_label', y='facture_total_value', title='Chiffre d\'affaires par produit')
+    st.plotly_chart(fig_prod, use_container_width=True)
+    st.write(f_df_prod)
+    
+    f_df_client = filtered_df[['facture_QRid','facture_QRclientId', 'client_client', 'facture_total_value']].groupby('facture_QRid').first().reset_index()
+    f_df_client=f_df_client[['client_client', 'facture_total_value']].groupby('client_client').sum().reset_index()
+    
+    fig_client = px.bar(f_df_client, x='client_client', y='facture_total_value', title='Chiffre d\'affaires par client')
+    st.plotly_chart(fig_client, use_container_width=True)
+    st.write(f_df_client)
 
 
 # You should cache your pygwalker renderer, if you don't want your memory to explode
-@st.cache_resource
+
 def get_pyg_html(df: pd.DataFrame) -> str:
     # Lorsque vous devez publier votre application, vous devez définir `debug=False`, pour empêcher les autres utilisateurs d'écrire votre fichier de configuration.
     # Si vous souhaitez utiliser la fonctionnalité d'enregistrement de la configuration des graphiques, définissez `debug=True`
@@ -294,15 +315,28 @@ def Rapport_erreur(session):
         
     
     st.subheader("Erreur dans les prix des produits :")
-    result_monitoring = session.execute(text("""
+    result = session.execute(text("""
     SELECT 
         *
     FROM erreurPrix;
     """))
     
-    # Convertir les résultats en DataFrame Pandas
-    df_monitoring = pd.DataFrame(result_monitoring.fetchall(), columns=result_monitoring.keys())
-    st.dataframe(df_monitoring)
+    
+    df = pd.DataFrame(result.fetchall(), columns=result.keys())
+    st.dataframe(df)
+    
+    st.subheader("Nombre de Clients Par Categorie :")
+    result = session.execute(text("""
+    SELECT 
+        *
+    FROM NombreClientsParCategorie;
+    """))
+    
+    
+    df = pd.DataFrame(result.fetchall(), columns=result.keys())
+    st.dataframe(df)
+    
+    
 
 def monitoring(session):
     st.subheader("monitoring :")
@@ -329,7 +363,7 @@ def update():
 
 
 
-st.cache_data()
+@st.cache_data()
 def newsession():
     # Récupérer la valeur actuelle de la variable d'environnement OCRsession
     current_value = os.getenv("OCRsession")
