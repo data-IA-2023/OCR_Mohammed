@@ -1,7 +1,7 @@
 # OCR_Mohammed
 
 Projet OCR
-
+streamlit run .\App_invoice.py 
 # CLI Azure
 Installation : https://learn.microsoft.com/fr-fr/cli/azure/install-azure-cli  
 Documentation az CLI : https://learn.microsoft.com/fr-fr/cli/azure/group?view=azure-cli-latest
