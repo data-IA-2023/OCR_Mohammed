@@ -16,5 +16,5 @@ pillow
 pygwalker
 streamlit
 streamlit-pandas-profiling
-webdriver-manager selenium
 plotly
+pyzbar

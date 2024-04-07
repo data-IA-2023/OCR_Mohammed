@@ -5,8 +5,8 @@ from sqlalchemy import func, text
 from JsonToBD import exportAll
 from ORM import Client, Facture, DetailFacture, connectBd
 import os
-import pygwalker as pyg
-from pygwalker.api.streamlit import init_streamlit_comm, get_streamlit_html
+# import pygwalker as pyg
+# from pygwalker.api.streamlit import init_streamlit_comm, get_streamlit_html
 import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 
