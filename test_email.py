@@ -5,7 +5,8 @@ def test_envoyer_email():
     destinataire = "destinataire@exemple.com"
     sujet = "Test d'envoi d'email"
     corps = "Ceci est un email de test."
-    result = envoyer_email(destinataire, sujet, corps)
-    assert result
+    resul = envoyer_email(destinataire, sujet, corps)
+    
+    assert resul
 def test_email():
     pytest.main(["-v", "test_email.py"])
