@@ -18,3 +18,4 @@ def envoyer_email(destinataire, sujet, corps):
         password=os.environ['EMAILPASS']
         server.login(mail, password)  
         server.send_message(msg)
+        return True
