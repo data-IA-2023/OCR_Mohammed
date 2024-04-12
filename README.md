@@ -19,6 +19,19 @@ Création de groupe de ressources:
  az group create --name $RESOURCE_GROUP --location $LOCATION
 ```
 
+Docker
+```bash
+docker build -t ocr-correction-mohammed .
+docker rm ocr-correction-mohammed
+docker run -p 3000:3000 -e MYVAR=XXX --name ocr-correction-mohammed ocr-correction-mohammed
+docker run -p 3000:3000 --env-file .env --name ocr-mohammed ocr-mohammed^
+```
+Dans Azure:
+```bash
+docker login regocrmohammed.azurecr.io
+docker tag ocr-correction-mohammed regocrmohammed.azurecr.io/ocr-correction-mohammed
+docker push regocrmohammed.azurecr.io/ocr-correction-mohammed
+```
 Lister les groupes de ressources (sous forme de table):
 ```bash
  az group list -o table
