@@ -24,6 +24,7 @@ Docker
 docker build -t ocr-correction-mohammed .
 docker rm ocr-correction-mohammed
 docker run -p 3000:3000 -e MYVAR=XXX --name ocr-correction-mohammed ocr-correction-mohammed
+docker run -p 3000:3000 --env-file .env --name ocr-mohammed ocr-mohammed^
 ```
 Dans Azure:
 ```bash
