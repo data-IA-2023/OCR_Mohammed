@@ -2,6 +2,7 @@ archive/
 factures/
 json/
 login.docx
+Dockerfile
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
